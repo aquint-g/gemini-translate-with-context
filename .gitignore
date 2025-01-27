@@ -1,0 +1,3 @@
+gemini-loc-ui/
+*.pyc
+__pycache__/

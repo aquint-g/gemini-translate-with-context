@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Translator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous" referrerpolicy="no-referrer"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+</head>
+
+<body>
+    <center>
+    <header> 
+        <img src="../static/images/google-cloud-logo.png" alt="Google-Cloud" height="100"> 
+    </header>
+</center>
+
+    <div class="login-page">
+      <div class="form" >
+        <form class="login-form" method="POST" enctype="multipart/form-data">
+            <label>CSV to translate: </label>
+            <input type="file" name="file" id="fileInput">
+            <label>Context (optional): </label>
+            <input type="file" name="pdf_context" id="pdfInput" accept=".pdf">
+
+            <label style="text-align: left;">Translate to: </label>
+            <select name="target_language" id="languageSelect">
+                <option value="Spanish">Spanish</option>
+                <option value="Italian">Italian</option>
+                <option value="French">French</option>
+                <option value="German">German</option>
+                <option value="Japanese">Japanese</option>
+                <option value="Chinese">Chinese</option>
+                <option value="Korean">Korean</option>
+                <option value="Russian">Russian</option>
+                <option value="Arabic">Arabic</option>
+                <option value="Portuguese">Portuguese</option>
+            </select><br><br>
+
+          <button type="submit" value="Translate">Translate</button>
+          <p class="message">Need help? <a href="#">Ask Antoine</a></p>
+        </form>
+  </div>
+</div>
+
+    
+
+    <!-- should have some other animation or loading gif that shows up for this -->
+<center>
+     <div id="video-container" style="display:none;">
+        <video id="myVideo" width="640" height="480" controls>
+            <source src="../static/videos/Harry Potter by Balenciaga - demonflyingfox (720p, h264, youtube).mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div> 
+    </center>
+    
+
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+        {% if translated_text %}
+            <div class="translatedTextTitle">
+                <table class="table table-striped">
+            {% for i in translated_text %} 
+                        <tr>
+                           <td><b> {{i['Speaker']}} </b></td>
+                           <td> {{i['Dialogue']}}</td>
+                        </tr> 
+            {%endfor%}
+            
+                </table>
+                </div>
+           <!-- Translated Text</div><div class="text">{{ translated_text }}</div> 
+               <center> <button id="downloadButton"><i class="fa fa-download"></i> Download</button></center><br>
+    </pre> -->
+            <input type="hidden" id="translatedText" name="translated_text" value="{{ translated_text }}"> 
+        {% endif %}
+        </div>
+</div>
+
+    
+    <script>
+
+        const form = document.querySelector('form');
+        const videoContainer = document.getElementById('video-container');
+        const video = document.getElementById('myVideo');
+        
+        
+        function showAndPlayVideo() {
+            videoContainer.style.display = 'block';
+            video.load();
+            // Check if the video can play through
+            if (video.readyState >= video.HAVE_FUTURE_DATA) {
+                video.play();
+            } else {
+                // If not ready, wait for the 'canplaythrough' event
+                video.addEventListener('canplaythrough', () => {
+                    video.play();
+                });
+            }
+        }
+        
+        // Function to save the selected language to local storage
+        function saveSelectedLanguage() {
+            const selectElement = document.getElementById('targetLanguage');
+            const selectedLanguage = selectElement.value;
+            localStorage.setItem('selectedLanguage', selectedLanguage);
+        }
+
+        // Function to load the saved language from local storage
+        function loadSelectedLanguage() {
+            const selectElement = document.getElementById('targetLanguage');
+            const savedLanguage = localStorage.getItem('selectedLanguage');
+            
+            if (savedLanguage) {
+                selectElement.value = savedLanguage;
+            }
+        }
+
+        const downloadButton = document.getElementById('downloadButton');
+        const translatedTextInput = document.getElementById('translatedText');
+        const fileInput = document.getElementById('fileInput');
+        const languageSelect = document.getElementById('languageSelect');
+
+        // Load previous values on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const storedFilename = localStorage.getItem('selectedFilename');
+            // const storedLanguage = localStorage.getItem('selectedLanguage'); // Retrieve stored language
+
+            if (storedLanguage) {
+                languageSelect.value = storedLanguage;
+            }
+        });
+
+        // Add an event listener to save the language when the selection changes
+        // const languageSelect = document.getElementById('targetLanguage');
+        languageSelect.addEventListener('change', saveSelectedLanguage);
+
+        // Load the saved language on page load
+        window.addEventListener('load', loadSelectedLanguage);
+
+        form.addEventListener('submit', (event) => {
+            showAndPlayVideo(); 
+        });
+
+
+        // Store values when they change
+        fileInput.addEventListener('change', () => {
+            const selectedFile = fileInput.files[0];
+            if (selectedFile) {
+                localStorage.setItem('selectedFilename', selectedFile.name);
+                // Read and display file content
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    document.getElementById('fileContent').textContent = event.target.result;
+                };
+                reader.readAsText(selectedFile); 
+            }
+        });
+
+        languageSelect.addEventListener('change', () => {
+            localStorage.setItem('selectedLanguage', languageSelect.value);
+        });
+        
+        if (downloadButton) {
+            downloadButton.addEventListener('click', () => {
+                // Get the translated text from the hidden input field
+                const translatedText = translatedTextInput.value;
+
+                fetch('/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'translated_text': translatedText 
+                    })
+                })
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    
+                    // Get the original filename from localStorage
+                    const originalFilename = localStorage.getItem('selectedFilename') || 'translated_text'; 
+                    const language = languageSelect.value; // Get selected language
+
+                    // Remove file extension from originalFilename (if any)
+                    const filenameWithoutExtension = originalFilename.replace(/\.[^/.]+$/, "");
+
+                    // Construct the download filename
+                    const downloadFilename = `${filenameWithoutExtension}_${language}.csv`; 
+
+                    a.download = downloadFilename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                })
+                .catch(error => {
+                    console.error('Error downloading:', error);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
+
+
+
+<style>
+    @import url(https://fonts.googleapis.com/css?family=Roboto:300);
+
+.login-page {
+  width: 360px;
+  padding: 5% 0 0;
+  margin: auto;
+}
+.form {
+  position: relative;
+  z-index: 1;
+  background: #FFFFFF;
+  max-width: 360px;
+  margin: 0 auto 100px;
+  padding: 45px;
+  box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
+}
+
+#downloadButton{
+    font-family: "Roboto", sans-serif;
+    text-transform: uppercase;
+    outline: 0;
+    background: #f4392c;
+    border: 0;
+    padding: 15px;
+    color: #FFFFFF;
+    font-size: 14px;
+    -webkit-transition: all 0.3 ease;
+    transition: all 0.3 ease;
+    cursor: pointer;
+}
+select{
+    width: 100%;
+    /* text-align: right; */
+    margin-right: 0;
+    height: 50px;
+    /* margin-left: 10%; */
+    background-color: #F2F2F2;
+    border: 0;
+    display: block;
+    padding-left: 17px;
+}
+.form label{
+    text-align: left;
+}
+
+table{
+    border: 1px solid black;
+}
+.translatedTextTitle {
+    background-color: white;
+    color: black;
+    padding: 15px;
+    font-size: 1.2em;
+    font-family: Roboto;
+
+}
+pre{
+    display: block;
+    background-color: white;
+    width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+    
+    font-family: 'Roboto';
+    border-radius: 10px 10px 10px;
+}
+pre .text{
+    padding: 2%;
+}
+.form input {
+  font-family: "Roboto", sans-serif;
+  outline: 0;
+  background: #f2f2f2;
+  width: 100%;
+  border: 0;
+  margin: 0 0 15px;
+  padding: 15px;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+.form button {
+  font-family: "Roboto", sans-serif;
+  text-transform: uppercase;
+  outline: 0;
+  background: #f4392c;
+  width: 100%;
+  border: 0;
+  padding: 15px;
+  color: #FFFFFF;
+  font-size: 14px;
+  -webkit-transition: all 0.3 ease;
+  transition: all 0.3 ease;
+  cursor: pointer;
+}
+.form button:hover,.form button:active,.form button:focus {
+  background: #b22218;
+}
+.form .message {
+  margin: 15px 0 0;
+  color: #b3b3b3;
+  font-size: 12px;
+}
+.form .message a {
+  color: #4CAF50;
+  text-decoration: none;
+}
+.form .register-form {
+  display: none;
+}
+.container {
+  position: relative;
+  z-index: 1;
+  margin: 0 auto;
+}
+.container:before, .container:after {
+  content: "";
+  display: block;
+  clear: both;
+}
+.container .info {
+  margin: 50px auto;
+  text-align: center;
+}
+.container .info h1 {
+  margin: 0 0 15px;
+  padding: 0;
+  font-size: 36px;
+  font-weight: 300;
+  color: #1a1a1a;
+}
+.container .info span {
+  color: #4d4d4d;
+  font-size: 12px;
+}
+.container .info span a {
+  color: #000000;
+  text-decoration: none;
+}
+.container .info span .fa {
+  color: #EF3B3A;
+}
+body {
+  background: #76b852; /* fallback for old browsers */
+  background: rgb(141,194,111);
+background: linear-gradient(90deg, rgb(0 0 0) 0%, rgb(30 30 30) 50%);  font-family: "Roboto", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;      
+}
+
+
+</style>
